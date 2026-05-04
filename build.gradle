@@ -1,0 +1,148 @@
+package net.fabricmc.example;
+
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+
+import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.MobSpawnerBlockEntity;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.render.*;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
+
+import org.lwjgl.glfw.GLFW;
+
+public class ExampleMod implements ClientModInitializer {
+
+    private static final int RADIUS = 4;
+    private static boolean enabled = true;
+    private static KeyBinding toggleKey;
+
+    @Override
+    public void onInitializeClient() {
+
+        toggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.chunkdebug.toggle",
+                GLFW.GLFW_KEY_K,
+                "category.chunkdebug"
+        ));
+
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            while (toggleKey.wasPressed()) {
+                enabled = !enabled;
+                System.out.println("ChunkDebug: " + (enabled ? "ON" : "OFF"));
+            }
+        });
+
+        WorldRenderEvents.END.register(context -> render(context.matrixStack()));
+    }
+
+    private static void render(MatrixStack matrices) {
+        if (!enabled) return;
+
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.player == null || client.world == null) return;
+
+        ChunkPos playerChunk = client.player.getChunkPos();
+
+        for (int x = -RADIUS; x <= RADIUS; x++) {
+            for (int z = -RADIUS; z <= RADIUS; z++) {
+
+                int cx = playerChunk.x + x;
+                int cz = playerChunk.z + z;
+
+                boolean spawner = hasSkeletonSpawner(client, cx, cz);
+                boolean base = isBase(client, cx, cz);
+
+                if (spawner) {
+                    drawChunk(matrices, cx, cz, 0f, 0.6f, 1f);
+                } else if (base) {
+                    drawChunk(matrices, cx, cz, 1f, 0f, 0f);
+                }
+            }
+        }
+    }
+
+    private static boolean hasSkeletonSpawner(MinecraftClient client, int cx, int cz) {
+        int startX = cx * 16;
+        int startZ = cz * 16;
+
+        for (int y = 20; y < 50; y++) {
+            for (int x = 0; x < 16; x++) {
+                for (int z = 0; z < 16; z++) {
+
+                    BlockPos pos = new BlockPos(startX + x, y, startZ + z);
+                    var state = client.world.getBlockState(pos);
+
+                    if (state.getBlock() == Blocks.SPAWNER) {
+                        var be = client.world.getBlockEntity(pos);
+
+                        if (be instanceof MobSpawnerBlockEntity spawner) {
+                            var type = spawner.getLogic().getEntityId(client.world);
+
+                            if (type != null && type.toString().contains("skeleton")) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean isBase(MinecraftClient client, int cx, int cz) {
+        int startX = cx * 16;
+        int startZ = cz * 16;
+
+        for (int y = 50; y < 80; y++) {
+            for (int x = 0; x < 16; x++) {
+                for (int z = 0; z < 16; z++) {
+
+                    BlockPos pos = new BlockPos(startX + x, y, startZ + z);
+                    var block = client.world.getBlockState(pos).getBlock();
+
+                    if (block == Blocks.CHEST ||
+                        block == Blocks.FURNACE ||
+                        block == Blocks.CRAFTING_TABLE) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private static void drawChunk(MatrixStack matrices, int chunkX, int chunkZ, float r, float g, float b) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        Camera cam = client.gameRenderer.getCamera();
+
+        double x = chunkX * 16 - cam.getPos().x;
+        double z = chunkZ * 16 - cam.getPos().z;
+
+        BufferBuilder buffer = Tessellator.getInstance().getBuffer();
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+
+        buffer.begin(VertexFormat.DrawMode.LINES, VertexFormats.POSITION_COLOR);
+
+        float a = 1f;
+
+        buffer.vertex(matrices.peek().getPositionMatrix(), (float)x, 0, (float)z).color(r,g,b,a).next();
+        buffer.vertex(matrices.peek().getPositionMatrix(), (float)x+16, 0, (float)z).color(r,g,b,a).next();
+
+        buffer.vertex(matrices.peek().getPositionMatrix(), (float)x+16, 0, (float)z).color(r,g,b,a).next();
+        buffer.vertex(matrices.peek().getPositionMatrix(), (float)x+16, 0, (float)z+16).color(r,g,b,a).next();
+
+        buffer.vertex(matrices.peek().getPositionMatrix(), (float)x+16, 0, (float)z+16).color(r,g,b,a).next();
+        buffer.vertex(matrices.peek().getPositionMatrix(), (float)x, 0, (float)z+16).color(r,g,b,a).next();
+
+        buffer.vertex(matrices.peek().getPositionMatrix(), (float)x, 0, (float)z+16).color(r,g,b,a).next();
+        buffer.vertex(matrices.peek().getPositionMatrix(), (float)x, 0, (float)z).color(r,g,b,a).next();
+
+        BufferRenderer.drawWithGlobalProgram(buffer.end());
+    }
+}
