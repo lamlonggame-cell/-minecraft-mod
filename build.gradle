@@ -1,9 +1,29 @@
-plugins { id 'fabric-loom' version '1.5-SNAPSHOT' }
+plugins {
+    id 'fabric-loom' version '1.5-SNAPSHOT'
+}
+
 version = "1.0.0"
 group = "com.example"
+
 dependencies {
     minecraft "com.mojang:minecraft:1.20.1"
     mappings "net.fabricmc:yarn:1.20.1+build.10:v2"
     modImplementation "net.fabricmc:fabric-loader:0.14.22"
     modImplementation "net.fabricmc.fabric-api:fabric-api:0.83.0+1.20.1"
 }
+```[cite: 4]
+
+---
+
+### 4. File `gradle.properties` chuẩn
+Nếu bạn chưa có file này, robot sẽ báo lỗi ngay lập tức:
+*   **Tên file:** `gradle.properties`[cite: 2]
+*   **Nội dung:**
+```properties
+org.gradle.jvmargs=-Xmx2G
+minecraft_version=1.20.1
+yarn_mappings=1.20.1+build.10
+loader_version=0.14.22
+```[cite: 2]
+
+Bạn hãy kiểm tra lại tab **Code** xem có thiếu file nào không nhé. Nếu bạn đã có đủ mà vẫn lỗi, hãy gửi ảnh màn hình chi tiết lỗi ở Bước 2 cho tôi!
