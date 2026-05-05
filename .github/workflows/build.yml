@@ -1,0 +1,21 @@
+name: Build Mod
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with: {java-version: '17', distribution: 'microsoft'}
+      - name: Build
+        run: |
+          wget https://github.com/fabricmc/fabric-example-mod/raw/master/gradlew
+          chmod +x gradlew
+          mkdir -p gradle/wrapper
+          wget https://github.com/fabricmc/fabric-example-mod/raw/master/gradle/wrapper/gradle-wrapper.jar -P gradle/wrapper/
+          wget https://github.com/fabricmc/fabric-example-mod/raw/master/gradle/wrapper/gradle-wrapper.properties -P gradle/wrapper/
+          ./gradlew build
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with: {name: Mod-Jar, path: build/libs/*.jar}
