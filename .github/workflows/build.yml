@@ -4,9 +4,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with: {java-version: '17', distribution: 'microsoft'}
       - name: Build
         run: |
@@ -17,5 +17,5 @@ jobs:
           wget https://github.com/fabricmc/fabric-example-mod/raw/master/gradle/wrapper/gradle-wrapper.properties -P gradle/wrapper/
           ./gradlew build
       - name: Upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with: {name: Mod-Jar, path: build/libs/*.jar}
